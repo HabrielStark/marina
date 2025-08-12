@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light dark" />
+    <title>Учет зарплат — UAH / EUR / USD</title>
+    <link rel="preconnect" href="https://openrouter.ai" crossorigin />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div class="app-brand">
+        <svg aria-hidden="true" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 4h18v2H3zM3 9h12v2H3zM3 14h18v2H3zM3 19h12v2H3z" />
+        </svg>
+        <h1>Учет зарплат</h1>
+      </div>
+      <div class="spacer"></div>
+      <div class="header-actions">
+        <div class="rates-indicator" id="ratesIndicator" title="Статус курсов валют">—</div>
+        <button id="refreshRatesBtn" class="btn ghost" aria-label="Обновить курсы валют">↻</button>
+        <button id="themeToggleBtn" class="btn ghost" aria-label="Переключить тему">🌗</button>
+        <button id="openSettingsBtn" class="btn" aria-haspopup="dialog">Настройки</button>
+        <button id="openChatBtn" class="btn accent" aria-haspopup="dialog">Чат</button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="toolbar">
+        <div class="field">
+          <label for="monthPicker">Месяц</label>
+          <input id="monthPicker" type="month" />
+        </div>
+        <div class="field">
+          <label for="searchInput">Поиск</label>
+          <input id="searchInput" type="search" placeholder="Найти сотрудника" />
+        </div>
+        <div class="toolbar-actions">
+          <button id="addEmployeeBtn" class="btn primary">Добавить сотрудника</button>
+          <button id="companyTotalsBtn" class="btn ghost">Итоги компании</button>
+        </div>
+      </section>
+
+      <section id="employeesContainer" class="employees-grid" aria-live="polite"></section>
+    </main>
+
+    <dialog id="employeeDialog" class="modal">
+      <form method="dialog" id="employeeForm" class="modal-card">
+        <header class="modal-header">
+          <h2 id="employeeDialogTitle">Новый сотрудник</h2>
+          <button class="btn ghost" value="cancel" aria-label="Закрыть">✕</button>
+        </header>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="field">
+              <label for="employeeName">Имя</label>
+              <input id="employeeName" name="employeeName" type="text" required placeholder="Иван Иванов" />
+            </div>
+            <div class="field">
+              <label for="baseSalaryAmount">Базовая зарплата</label>
+              <input id="baseSalaryAmount" name="baseSalaryAmount" type="number" min="0" step="0.01" required />
+            </div>
+            <div class="field">
+              <label for="baseSalaryCurrency">Валюта</label>
+              <select id="baseSalaryCurrency" name="baseSalaryCurrency">
+                <option value="UAH">UAH ₴</option>
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="employeeId" />
+        </div>
+        <footer class="modal-footer">
+          <button class="btn" value="cancel">Отмена</button>
+          <button class="btn primary" id="saveEmployeeBtn" value="default">Сохранить</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="itemDialog" class="modal">
+      <form method="dialog" id="itemForm" class="modal-card">
+        <header class="modal-header">
+          <h2 id="itemDialogTitle">Добавить позицию</h2>
+          <button class="btn ghost" value="cancel" aria-label="Закрыть">✕</button>
+        </header>
+        <div class="modal-body">
+          <div class="grid-2">
+            <div class="field">
+              <label for="itemType">Тип</label>
+              <select id="itemType" name="itemType">
+                <option value="accrual">Начисление</option>
+                <option value="deduction">Удержание</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="itemLabel">Название</label>
+              <input id="itemLabel" name="itemLabel" type="text" required placeholder="Бонус / Налог" />
+            </div>
+            <div class="field">
+              <label for="itemAmount">Сумма</label>
+              <input id="itemAmount" name="itemAmount" type="number" step="0.01" required />
+            </div>
+            <div class="field">
+              <label for="itemCurrency">Валюта</label>
+              <select id="itemCurrency" name="itemCurrency">
+                <option value="UAH">UAH ₴</option>
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+              </select>
+            </div>
+          </div>
+          <input type="hidden" id="itemEmployeeId" />
+          <input type="hidden" id="itemId" />
+        </div>
+        <footer class="modal-footer">
+          <button class="btn" value="cancel">Отмена</button>
+          <button class="btn primary" id="saveItemBtn" value="default">Сохранить</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <dialog id="settingsDialog" class="modal">
+      <form method="dialog" id="settingsForm" class="modal-card">
+        <header class="modal-header">
+          <h2>Настройки</h2>
+          <button class="btn ghost" value="cancel" aria-label="Закрыть">✕</button>
+        </header>
+        <div class="modal-body">
+          <section class="section">
+            <h3>Тема</h3>
+            <div class="field inline">
+              <label for="themeSelect">Оформление</label>
+              <select id="themeSelect">
+                <option value="auto">Авто</option>
+                <option value="light">Светлая</option>
+                <option value="dark">Тёмная</option>
+              </select>
+            </div>
+          </section>
+          <section class="section">
+            <h3>Валюта</h3>
+            <div class="field inline">
+              <label for="baseCurrencySelect">Базовая валюта для курсов</label>
+              <select id="baseCurrencySelect">
+                <option value="UAH">UAH ₴</option>
+                <option value="USD">USD $</option>
+                <option value="EUR">EUR €</option>
+              </select>
+            </div>
+          </section>
+          <section class="section">
+            <h3>OpenRouter</h3>
+            <p class="muted">Ваш API‑ключ хранится локально на этом устройстве.</p>
+            <div class="field">
+              <label for="openRouterKey">API‑ключ</label>
+              <input id="openRouterKey" type="password" placeholder="sk-or-v1-..." autocomplete="off" />
+            </div>
+            <div class="field inline">
+              <label for="modelSelect">Модель</label>
+              <input id="modelSelect" type="text" value="openrouter/auto" />
+            </div>
+          </section>
+          <section class="section">
+            <h3>Данные</h3>
+            <div class="settings-row">
+              <button id="exportBtn" class="btn">Экспорт JSON</button>
+              <label class="btn">
+                Импорт JSON
+                <input id="importInput" type="file" accept="application/json" hidden />
+              </label>
+              <button id="clearDataBtn" class="btn danger">Очистить всё</button>
+            </div>
+          </section>
+        </div>
+        <footer class="modal-footer">
+          <button class="btn" value="cancel">Закрыть</button>
+          <button class="btn primary" id="saveSettingsBtn" value="default">Сохранить</button>
+        </footer>
+      </form>
+    </dialog>
+
+    <aside id="chatDrawer" class="chat-drawer" aria-hidden="true" aria-label="Чат с OpenRouter">
+      <header class="chat-header">
+        <h2>Ассистент</h2>
+        <div class="spacer"></div>
+        <button id="closeChatBtn" class="btn ghost" aria-label="Закрыть чат">✕</button>
+      </header>
+      <div id="chatMessages" class="chat-messages" aria-live="polite"></div>
+      <form id="chatForm" class="chat-input" autocomplete="off">
+        <textarea id="chatText" rows="2" placeholder="Спросите о зарплате, налогах, политике…" required></textarea>
+        <button class="btn primary" id="sendChatBtn" type="submit">Отправить</button>
+      </form>
+    </aside>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+    <script src="./app.js" defer></script>
+  </body>
+  </html>
+
+
